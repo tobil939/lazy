@@ -264,22 +264,66 @@ vim.api.nvim_exec(
 	true
 )
 
--- Funktion, um die Zeile auf eine bestimmte Spalte zu erweitern
-function _G.fill_to_column(col)
+function _G.get_comment_char()
+	local comment_chars = {
+		lua = "--",
+		c = "//",
+		go = "//",
+		haskell = "--",
+		latex = "%",
+		python = "#",
+		r = "#",
+		zig = "//",
+		assembly = ";", -- Generische Annahme
+		matlab = "%",
+	}
+
+	local filetype = vim.bo.filetype
+	return comment_chars[filetype] or "#" -- Standardmäßig `#`
+end
+
+function _G.jump_to_column_and_insert_comment(col)
 	local line = vim.fn.getline(".")
 	local len = vim.fn.strdisplaywidth(line)
+
+	-- Füge Leerzeichen hinzu, wenn nötig
 	if len < col then
 		vim.fn.setline(".", line .. string.rep(" ", col - len))
 	end
+
+	-- Bewege den Cursor zu Spalte `col`
 	vim.cmd("normal! " .. col .. "|")
+
+	-- Hole das Kommentarzeichen und füge es ein
+	local comment_char = _G.get_comment_char()
+	vim.api.nvim_put({ comment_char .. " " }, "c", true, true)
+
+	-- Starte den Insert-Modus
 	vim.cmd("startinsert")
 end
 
--- Mapping für Ctrl-Shift-K
-vim.api.nvim_set_keymap("n", "<C-S-k>", [[:lua fill_to_column(55)<CR>]], { noremap = true, silent = true })
-vim.api.nvim_set_keymap("n", "<C-S-i>", "i% ====================<ESC>", { noremap = true, silent = true })
-vim.o.relativenumber = true
+function _G.insert_comment_with_equals()
+	-- Hole das Kommentarzeichen
+	local comment_char = _G.get_comment_char()
 
---local ls = require("luasnip")
---local s = ls.snippet
---local t = ls.text_node
+	-- Erstelle den Text und füge ihn ein
+	local insert_text = comment_char .. " " .. string.rep("=", 10) .. "  "
+	vim.api.nvim_put({ insert_text }, "c", true, true)
+
+	-- Füge den Text danach ein
+	vim.cmd("normal! A")
+
+	-- Starte den Insert-Modus
+	vim.cmd("startinsert")
+end
+
+-- Springe zu Spalte 55 und füge Kommentarzeichen ein
+vim.api.nvim_set_keymap(
+	"n",
+	"<C-S-k>",
+	[[:lua jump_to_column_and_insert_comment(55)<CR>]],
+	{ noremap = true, silent = true }
+)
+
+-- Füge Kommentarzeichen und 10x = ein
+vim.api.nvim_set_keymap("n", "<C-S-i>", [[:lua insert_comment_with_equals()<CR>]], { noremap = true, silent = true })
