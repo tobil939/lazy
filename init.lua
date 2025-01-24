@@ -26,6 +26,48 @@ local plugins = {
 		enabled = false, -- Disable friendly-snippets
 	},
 	{
+		"mfussenegger/nvim-dap",
+		config = function()
+			local dap = require("dap")
+
+			-- Debug-Adapter für Go
+			dap.adapters.go = {
+				type = "server",
+				port = "${port}",
+				executable = {
+					command = "dlv",
+					args = { "dap", "-l", "127.0.0.1:${port}" },
+				},
+			}
+
+			-- Debug-Konfigurationen für Go
+			dap.configurations.go = {
+				{
+					type = "go",
+					name = "Debug",
+					request = "launch",
+					program = "${file}",
+				},
+			}
+		end,
+	},
+	-- UI für nvim-dap (optional, aber sehr hilfreich)
+	{
+		"rcarriga/nvim-dap-ui",
+		dependencies = { "mfussenegger/nvim-dap" },
+		config = function()
+			require("dapui").setup()
+		end,
+	},
+	-- Nützliche virtuelle Texte für Breakpoints und Variablen (optional)
+	{
+		"theHamsta/nvim-dap-virtual-text",
+		dependencies = { "mfussenegger/nvim-dap" },
+		config = function()
+			require("nvim-dap-virtual-text").setup()
+		end,
+	},
+	{
 		"L3MON4D3/LuaSnip",
 		version = "v2.*",
 		build = "make install_jsregexp",
@@ -129,6 +171,7 @@ local plugins = {
 						null_ls.builtins.formatting.stylua, -- Lua
 						null_ls.builtins.formatting.shfmt, -- Shell scripts
 						null_ls.builtins.formatting.clang_format, -- C/C++
+						null_ls.builtins.formatting.gofmt, -- go
 					},
 				})
 			end,
@@ -212,6 +255,20 @@ local plugins = {
 							require("lspconfig").matlab_ls.setup({})
 							require("lspconfig").r_language_server.setup({})
 							require("lspconfig").zls.setup({})
+							require("lspconfig").gopls.setup({
+								cmd = { "gopls" },
+								filetypes = { "go", "gomod", "gowork", "gotmpl" },
+								root_dir = require("lspconfig.util").root_pattern("go.work", "go.mod", ".git"),
+								settings = {
+									gopls = {
+										analyses = {
+											unusedparams = true,
+											shadow = true,
+										},
+										staticcheck = true,
+									},
+								},
+							})
 						end,
 					},
 				})
@@ -219,6 +276,26 @@ local plugins = {
 		},
 	},
 }
+
+--local dap = require("dap")
+--
+--dap.adapters.go = {
+--	type = "server",
+--	port = "${port}",
+--	executable = {
+--		command = "dlv",
+--		args = { "dap", "-l", "127.0.0.1:${port}" },
+--	},
+--}
+--
+--dap.configurations.go = {
+--	{
+--		type = "go",
+--		name = "Debug",
+--		request = "launch",
+--		program = "${file}",
+--	},
+--}
 
 local opts = {}
 
